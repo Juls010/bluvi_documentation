@@ -7,7 +7,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 const config: Config = {
   title: 'Documentación de Bluvi',
   tagline: 'Documentación técnica de la plataforma Bluvi',
-  favicon: 'img/favicon.svg',
+  favicon: 'img/favicon.ico',
   markdown: {
     mermaid: true,
   },
