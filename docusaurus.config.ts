@@ -7,7 +7,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 const config: Config = {
   title: 'Documentación de Bluvi',
   tagline: 'Documentación técnica de la plataforma Bluvi',
-  favicon: 'img/favicon.svg',
+  favicon: 'img/b_azul.png',
   markdown: {
     mermaid: true,
   },
@@ -82,7 +82,8 @@ const config: Config = {
     navbar: {
       logo: {
         alt: 'Bluvi Logo',
-        src: 'img/logo.svg',
+        src: 'img/logo_b_a.svg',
+        srcDark: 'img/logo_b_b.svg',
       },
       items: [
         {
