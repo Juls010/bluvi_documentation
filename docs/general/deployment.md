@@ -1,85 +1,94 @@
-# Despliegue en la Nube y CI/CD
+# Despliegue y operación
 
-Este documento describe el flujo y las herramientas necesarias para poner en producción las aplicaciones frontend y backend de **Bluvi**, así como el funcionamiento de la integración continua (CI/CD).
+## Backend en Railway
 
----
+El backend se compila como TypeScript y se inicia desde `dist`:
 
-## 1. Despliegue del Backend
+```text
+Build:  npm run build
+Start:  npm start
+Health: /health
+```
 
-El backend de Bluvi es una API REST con persistencia en PostgreSQL y caché en Redis. Está preparado para desplegarse en plataformas PaaS como **Railway** o **Render**:
+La plataforma debe proporcionar la configuración de base de datos,
+autenticación, almacenamiento, caché, orígenes permitidos y proveedores
+externos habilitados. En despliegues detrás de proxy también debe preservarse la
+IP real para que el rate limiting sea fiable.
 
-### Proceso de Despliegue manual / guiado:
-1. Crea una base de datos PostgreSQL gestionada en la nube (por ejemplo en Supabase o en la propia base de datos Postgres de Railway).
-2. Crea una instancia de Redis gestionada (por ejemplo en Upstash o en Railway).
-3. Conecta el repositorio de GitHub de `bluvi-backend` a tu servicio PaaS.
-4. Configura las variables de entorno de producción en la plataforma (ver variables críticas abajo).
-5. Especifica el comando de inicio en la plataforma:
-   - Build command: `npm run build`
-   - Start command: `npm start`
+Antes de publicar:
 
-### Variables de Entorno en Producción:
-En el panel del servidor en la nube, asegúrate de definir:
-- `NODE_ENV=production`
-- `DATABASE_URL`: Cadena de conexión directa con SSL de tu PostgreSQL en producción.
-- `DATABASE_SSL=true` (activa la conexión encriptada para bases de datos como Supabase).
-- `REDIS_URL`: Endpoint de Redis seguro.
-- `JWT_ACCESS_SECRET` y `JWT_REFRESH_SECRET`: Claves criptográficas fuertes.
-- `ALLOWED_ORIGINS`: URL del frontend de producción (ejemplo: `https://bluvi.pages.dev`).
-- `TRUST_PROXY=true`: Requerido para capturar la IP real del cliente detrás de balanceadores de carga para que el rate limit actúe eficazmente contra ataques de fuerza bruta.
+1. Ejecutar migraciones en la base de datos objetivo.
+2. Verificar `/health` y los logs de arranque.
+3. Confirmar los orígenes permitidos para web y móvil.
+4. Probar login, refresh, upload, Socket.IO y una operación de chat.
 
----
+## Frontend en Cloudflare Workers
 
-## 2. Despliegue del Frontend
+El frontend se genera con Vite y `wrangler.jsonc` publica `dist` como assets
+de un Worker con fallback SPA.
 
-El frontend de Bluvi se compila a archivos estáticos (SPA) y está optimizado para desplegarse en **Cloudflare Pages** o **Vercel**:
-
-### Despliegue con Cloudflare Pages (Recomendado):
-El frontend incluye un archivo de configuración `wrangler.jsonc` y un script `deploy` para usar Cloudflare Wrangler de forma directa.
-
-#### Opción A: Despliegue automático (Git Integration)
-1. Ve al panel de Cloudflare Pages y crea un nuevo proyecto conectado a tu repositorio `bluvi-frontend`.
-2. Selecciona la configuración de compilación para **Vite**:
-   - Framework preset: `Vite`
-   - Build command: `npm run build`
-   - Build output directory: `dist`
-3. En la pestaña de configuración del proyecto, agrega las variables de entorno:
-   - `VITE_BACKEND_URL`: URL del backend publicado en producción (ej. `https://bluvi-backend.railway.app`).
-   - `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`.
-4. Guarda y haz un despliegue inicial.
-
-#### Opción B: Despliegue por línea de comandos (Wrangler CLI)
-Para desplegar manualmente desde tu consola local:
-```bash
+```powershell
+npm run build
 npm run deploy
 ```
-*Este comando compilará el proyecto y subirá los estáticos a Cloudflare usando la cuenta autenticada.*
 
----
+Los perfiles disponibles son producción y staging:
 
-## 3. Integración y Despliegue Continuo (CI/CD)
-
-Para mantener la calidad del software y automatizar la entrega, el proyecto integra pipelines de desarrollo continuo:
-
-### Backend CI (GitHub Actions)
-Cada vez que se sube código o se crea un Pull Request hacia la rama `main` en el repositorio del backend, se dispara el flujo automatizado definido en `.github/workflows/ci-backend.yml`:
-
-```mermaid
-graph LR
-    Push[Push/PR to main] --> Checkout[Checkout Code]
-    Checkout --> Setup[Configurar Node v22]
-    Setup --> Dependencies[Instalar npm ci]
-    Dependencies --> Tests[Ejecutar npm test]
-    Tests --> Build[Compilar npm run build]
-    Build --> Finish[Pipeline Éxito]
+```powershell
+npm run deploy:production
+npm run deploy:staging
 ```
 
-El pipeline realiza los siguientes pasos automatizados en la nube de GitHub:
-1. **Checkout**: Descarga el código fuente del commit.
-2. **Setup Node**: Levanta un entorno Ubuntu limpio con Node.js v22.
-3. **Instalación limpia (`npm ci`)**: Instala las dependencias respetando estrictamente el archivo `package-lock.json`.
-4. **Pruebas (`npm test`)**: Ejecuta la suite de pruebas unitarias internas.
-5. **Compilación (`npm run build`)**: Compila TypeScript a JavaScript nativo para verificar que no existan errores de tipos.
+La configuración pública y la conexión con los servicios se define en el
+entorno de Cloudflare correspondiente. El Worker de staging se llama
+`bluvi-staging`.
 
-### CD (Despliegue Continuo)
-- **Frontend**: Cloudflare Pages detecta de forma automática los nuevos commits en la rama `main`, compila la aplicación usando las variables configuradas en su panel y actualiza el sitio de producción en segundos sin caída del servicio.
-- **Backend**: Plataformas como Railway o Render realizan el redeploy automático tras el éxito del pipeline de GitHub, clonando la última versión del commit de `main`, construyendo el contenedor y conmutando el tráfico HTTP hacia la nueva instancia.
+## Mobile con EAS
+
+`eas.json` define los perfiles `development`, `preview`, `testing`, `e2e` y
+`production`. Los perfiles de testing y E2E apuntan al backend de staging y no
+deben usarse contra producción.
+
+```powershell
+npm run build:android       # perfil testing, AAB para distribución
+npm run build:android:final # perfil production, AAB para tienda
+npx eas-cli@latest build --profile e2e --platform android
+```
+
+Los builds de desarrollo/preview producen APK de distribución interna; los de
+testing/production producen Android App Bundle. EAS incrementa la versión
+remotamente mediante `appVersionSource: remote`.
+
+## CI y comprobaciones
+
+El backend tiene GitHub Actions para Node 22, `npm ci`, tests y compilación en
+push/PR a `main`. Mobile añade un workflow EAS para construir una APK y
+ejecutar Maestro en un emulador Android.
+
+La lista mínima antes de un release es:
+
+```powershell
+# backend
+npm test
+npm run build
+
+# frontend
+npm test
+npm run lint
+npm run build
+
+# mobile
+npm test
+npm run lint
+```
+
+## Rollback y diagnóstico
+
+- Identificar la versión desplegada y la versión EAS de cada release.
+- Revisar primero `/health`, logs del backend, conectividad de base de datos,
+  CORS, cookies/JWT y estado de Socket.IO.
+- Si falla el cliente web, comprobar variables de Cloudflare y el fallback SPA.
+- Si falla móvil, comprobar el perfil EAS, la conexión con el backend, permisos
+  nativos y el `applicationId` Android.
+- No revertir migraciones destructivas sin una copia y un procedimiento de
+  recuperación de la base de datos.

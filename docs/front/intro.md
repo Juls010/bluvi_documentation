@@ -1,54 +1,48 @@
-# Introducción al Frontend
+# Introducción al frontend web
 
-Esta sección documenta la interfaz de usuario, los componentes visuales y la arquitectura del lado del cliente de Bluvi (`bluvi-frontend`).
+`bluvi-frontend` es una SPA React/TypeScript construida con Vite. Ofrece la
+experiencia pública, el onboarding, el área autenticada, el chat y el panel de
+administración.
 
----
+## Stack actual
 
-## Stack Tecnológico del Frontend
+- React 19 y TypeScript.
+- Vite 7 y plugin React SWC.
+- React Router DOM 7.
+- Tailwind CSS 4, MUI, Framer Motion y `next-themes`.
+- React Aria Components para controles accesibles.
+- TanStack Query para caché y estado asíncrono.
+- Axios para REST y Socket.IO Client para tiempo real.
+- Supabase para recursos públicos y Cloudflare Wrangler para despliegue.
+- Vitest, Testing Library y ESLint para calidad.
 
-El frontend está estructurado sobre las siguientes tecnologías principales:
+## Estructura de `src`
 
-- **Framework**: React (con Vite / Next.js)
-- **Lenguaje**: TypeScript
-- **Estilos**: TailwindCSS y Custom CSS para micro-animaciones
-- **Gestión de Estado**: Zustand (estado global e integración de sockets)
-- **Comunicación en Tiempo Real**: Socket.io-client
-- **Enrutamiento**: React Router o Next Router
+| Carpeta | Responsabilidad |
+| --- | --- |
+| `assets` | Imágenes, iconos y fuentes |
+| `components` | UI reutilizable, modales y feedback |
+| `config` | URL y configuración del backend |
+| `context` | Auth, registro y notificaciones |
+| `hooks` | Lógica reutilizable de UI y datos |
+| `layouts` | Shell público, registro, app, chat y legal |
+| `pages` | Pantallas agrupadas por dominio |
+| `router` | Router centralizado y guards |
+| `services` | API, storage, chat, matches, audio y realtime |
+| `tests` | Pruebas unitarias, integración y componentes |
+| `types` | Tipos compartidos del cliente |
 
----
+## Scripts
 
-## Estructura de Carpetas Sugerida
-
-El cliente de Bluvi sigue una organización modular enfocada en componentes atómicos y hooks reutilizables:
-
+```powershell
+npm run dev
+npm run build
+npm run build:staging
+npm test
+npm run lint
+npm run deploy:staging
+npm run deploy:production
 ```
-src/
-├── assets/          # Imágenes, iconos y recursos estáticos
-├── components/      # UI Atoms, Molecules y Organisms
-│   ├── common/      # Botones, inputs y modales genéricos
-│   ├── layout/      # Navbar, Footer y Sidebars
-│   └── profile/     # Componentes específicos de gestión de perfiles
-├── hooks/           # Custom React Hooks (useAuth, useSocket, etc.)
-├── pages/           # Vistas principales de la aplicación (Home, Login, Chat)
-├── services/        # Clientes API (fetch/axios) y configuración de sockets
-└── store/           # Stores de Zustand para estado global
-```
 
----
-
-## Guías de Desarrollo del Frontend
-
-### 1. Integración en Tiempo Real
-Toda la lógica de Socket.io se maneja a través de un hook centralizado `useSocket` y se vincula con el store global para actualizar de inmediato el estado de la mensajería y la lista de usuarios activos.
-
-### 2. Estilos y Temas
-El proyecto utiliza un sistema de temas claro/oscuro que responde a la preferencia del sistema del usuario, con posibilidad de toggle manual. Se promueve el uso de variables CSS para mantener colores consistentes.
-
-### 3. Consumo de API (Backend)
-Las peticiones HTTP al backend se realizan mediante un cliente configurado con interceptores que adjuntan automáticamente el token JWT y manejan la lógica de expiración y redirección al login de forma centralizada.
-
----
-
-## Secciones Detalladas
-
-- **[Arquitectura y Diseño del Frontend](/front/architecture)**: Filosofía de diseño, flujos globales, maquetación de layouts y comunicación WebSocket.
+La conexión con backend y servicios externos se selecciona por entorno de
+despliegue; las credenciales de servicio permanecen fuera del cliente.

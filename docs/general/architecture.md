@@ -1,70 +1,55 @@
-# Arquitectura, Lenguajes y Requisitos de Versión
+# Arquitectura y tecnologías
 
-Este documento detalla la estructura lógica del sistema **Bluvi**, los lenguajes de programación empleados en su desarrollo y las dependencias de versiones necesarias para ejecutar e integrar el proyecto.
+## Componentes
 
----
+| Componente | Tecnología principal | Responsabilidad |
+| --- | --- | --- |
+| Frontend web | React 19, TypeScript, Vite, React Router 7 | SPA pública, privada y administrativa |
+| Backend | Node.js, Express 5, TypeScript | API REST, autenticación y reglas de negocio |
+| Mobile | Expo 56, React Native 0.85, Expo Router 56 | Cliente Android/iOS con capacidades nativas |
+| Persistencia | PostgreSQL mediante `pg` y Supabase | Usuarios, perfiles, matches, chats y catálogos |
+| Caché | Redis/Upstash | Discovery, metadatos, rate limiting y datos temporales |
+| Multimedia | Supabase Storage y servicios compatibles S3/R2 | Fotos, audio y archivos de chat |
+| Tiempo real | Socket.IO 4 | Mensajes, presencia, typing y estados de entrega |
+| Hosting | Cloudflare Workers, Railway, EAS | Web, API y distribución móvil |
 
-## 1. Arquitectura de la Aplicación
+## Flujo de una petición
 
-Bluvi se sustenta en una **arquitectura cliente/servidor desacoplada** y distribuida en capas especializadas. Esto garantiza la separación de responsabilidades y la modularidad del código:
+1. El cliente obtiene la URL del backend desde configuración de entorno.
+2. Axios añade el access token cuando la operación requiere autenticación.
+3. Express aplica `helmet`, CORS, parsing, cookies, proxy trust y rate limits.
+4. La ruta valida autenticación, permisos y payload con middleware/controlador.
+5. El controlador consulta PostgreSQL y usa caché o almacenamiento cuando aplica.
+6. La respuesta JSON vuelve al cliente; Socket.IO se utiliza para actualizaciones
+   que no deben esperar a un nuevo polling.
+
+## Límites entre repositorios
+
+- `bluvi-frontend` no debe editarse desde el proyecto móvil; cada cliente tiene
+  su propio ciclo de build y despliegue.
+- `bluvi-backend` es la autoridad para datos, autenticación, autorización,
+  verificación, moderación y resultados de operaciones sensibles.
+- `bluvi-mobile` añade permisos de cámara, micrófono, galería, notificaciones,
+  almacenamiento seguro y módulos nativos que no existen en la web.
+
+## Capas del backend
 
 ```mermaid
-graph TD
-    Client[Frontend Client SPA<br/>React 19 / Vite]
-    API[Backend API REST<br/>Express.js]
-    SocketServer[Real-Time Server<br/>Socket.io]
-    DB[(PostgreSQL Database)]
-    Cache[(Redis Cache)]
-    Storage[Supabase Storage<br/>Multimedia]
-    HF[Hugging Face API<br/>Inferencia Whisper]
-    TTS[Voipi TTS Service<br/>Narración]
-
-    Client <-->|HTTP REST / JWT| API
-    Client <-->|WebSockets| SocketServer
-    API <-->|SQL / Pool Connection| DB
-    API <-->|Redis Protocol| Cache
-    API <-->|SDK| Storage
-    API -->|HTTPS Request| HF
-    API -->|SDK / Edge TTS| TTS
+flowchart TD
+  Routes[Rutas Express] --> Middleware[Seguridad y autenticación]
+  Middleware --> Controllers[Controladores]
+  Controllers --> Services[Servicios de dominio]
+  Services --> DB[Pool PostgreSQL]
+  Services --> Cache[Caché Redis/Upstash]
+  Services --> Providers[Supabase, AWS, Veriff, Resend, Hugging Face]
+  Controllers --> Socket[Socket.IO]
 ```
 
-### Componentes de la Arquitectura
-- **Capa Cliente (Frontend SPA)**: Una interfaz moderna diseñada para consumir servicios de forma asíncrona mediante peticiones HTTP estructuradas y flujos de eventos WebSocket en tiempo real.
-- **Capa de Servidor (Backend API)**: Un servidor Express que gestiona el enrutamiento HTTP, la seguridad mediante middlewares (rate limiting, validación Zod, cabeceras Helmet) y la lógica transaccional con la base de datos PostgreSQL.
-- **Capa en Tiempo Real (Real-time Layer)**: Un servidor de websockets montado sobre Socket.io que mantiene conexiones bidireccionales activas para mensajería instantánea y presencia en línea.
-- **Capa de Almacenamiento e Inferencia**: PostgreSQL guarda la persistencia relacional, Redis maneja el cacheo e invalidación rápida de búsquedas, Supabase almacena notas de voz y fotos, y Hugging Face realiza tareas de inteligencia artificial para traducción ASR (Whisper).
+Las rutas viven en `src/routes`, la lógica HTTP en `src/controllers`, la lógica
+reutilizable en `src/services` y la configuración de runtime en `src/config`.
 
----
+## Versiones relevantes
 
-## 2. Lenguajes de Programación Utilizados
-
-El desarrollo de la plataforma se unifica bajo el ecosistema de JavaScript moderno:
-
-- **TypeScript**: Se emplea de forma nativa en todo el backend y frontend para proporcionar tipado estático, autocompletado y detección de errores en fase de compilación.
-- **JavaScript (ES Modules)**: Entorno estándar de empaquetado y ejecución.
-- **SQL (PostgreSQL dialect)**: Para modelar relaciones complejas de datos, restricciones de integridad relacional (`ON DELETE CASCADE`) y subconsultas de agregación JSON.
-- **HTML5 & CSS3**: Para la estructura de la aplicación y la maquetación accesible (diseñada con TailwindCSS v4 y variables nativas CSS).
-
----
-
-## 3. Requisitos de Versión
-
-Para garantizar el correcto funcionamiento y despliegue del proyecto, se deben cumplir los siguientes requisitos mínimos de software:
-
-### Entorno de Ejecución (Node.js)
-- **Frontend**: Requiere **Node.js v18.0.0** o superior.
-- **Backend**: Requiere **Node.js v22.0.0** o superior (debido al uso del importador nativo de módulos de TypeScript `tsx` y la suite de pruebas nativa `node --test`).
-
-### Frameworks y Librerías Principales
-| Componente | Tecnología | Versión Mínima / Recomendada | Notas |
-| :--- | :--- | :--- | :--- |
-| **Frontend** | React | `^19.2.0` | React 19 (última versión estable) |
-| **Frontend** | React Router DOM | `^7.13.0` | Gestión de rutas dinámicas |
-| **Frontend** | Vite | `^7.2.4` | Herramienta de compilación rápida |
-| **Backend** | Express | `^5.2.1` | Manejo de peticiones HTTP |
-| **Backend** | TypeScript | `~5.9.3` | Compilador y tipado estático |
-| **Tiempo Real** | Socket.io / Socket.io-client | `^4.8.3` | Comunicación WebSockets duplex |
-
-### Motores de Base de Datos y Caché
-- **PostgreSQL**: Versión **15.0** o superior (necesaria para soporte nativo de JSONB y funciones avanzadas de agregación).
-- **Redis**: Versión **6.2** o superior (para soporte de TTL por clave y clientes distribuidos en la nube).
+Las versiones exactas se mantienen en cada `package.json` y lockfile. En la
+revisión actual destacan Node 22 en CI del backend, TypeScript 5.9/6.0,
+React 19, Express 5, Expo SDK 56 y React Native 0.85.

@@ -1,62 +1,40 @@
-# Guía de Uso de la Aplicación
+# Guía funcional y de desarrollo
 
-Esta sección funciona como un manual de usuario interactivo para guiar a cualquier persona en el uso de la plataforma **Bluvi**, desde el registro inicial hasta el uso de sus herramientas diarias.
+## Flujo de usuario
 
----
+1. La persona entra en `/` y puede consultar información y documentos legales.
+2. En `/register` completa el wizard y sube fotos mediante los endpoints de
+   registro.
+3. Tras verificar el email accede al área privada.
+4. En Discovery consulta perfiles, registra vistos e inicia solicitudes de
+   match.
+5. Los matches aceptados habilitan conversaciones y eventos de tiempo real.
+6. Perfil y ajustes permiten editar datos, privacidad, accesibilidad,
+   preferencias de atmósfera, reportes y eliminación de cuenta.
 
-## 1. Registro en la Plataforma (Onboarding Wizard)
+## Integración con backend
 
-Para asegurar la afinidad entre conexiones y proteger el entorno de la comunidad, el proceso de registro se divide en un **asistente dinámico de 14 pasos**:
+Los servicios de `src/services` deben usar la instancia Axios centralizada y
+tipar las respuestas. Las páginas no deben construir URLs de backend
+manualmente. Para operaciones sensibles:
 
-1. **Introducción y Consentimiento**: Lectura de los pilares de la comunidad (respeto, seguridad, empatía).
-2. **Creación de Credenciales**: Entrada de correo electrónico y contraseña segura.
-3. **Código OTP**: Validación de correo electrónico ingresando el pin temporal recibido.
-4. **Datos Básicos**: Nombre, fecha de nacimiento y género.
-5. **Preferencia de Neurotipo**: Selección (opcional) de rasgos de neurodivergencia (Autismo, TDAH, Altas Capacidades, etc.) para afinar el matching.
-6. **Estilo de Comunicación**: Indicadores sobre cómo te expresas (directo, metafórico, prefieres chat escrito o notas de voz).
-7. **Estilo de Socialización**: Frecuencia de interacción y límites de batería social.
-8. **Intereses Principales**: Selección de aficiones (tecnología, lectura, gaming, arte, naturaleza...).
-9. **Descripción de Perfil (Bio)**: Espacio libre para redactar tu presentación.
-10. **Ajustes de Sensibilidad**: Preferencia de reducción de animaciones y opacidad.
-11. **Configuración de Búsqueda**: Rangos de edad y distancia para tus sugerencias.
-12. **Subida de Selfie**: Foto de perfil para reconocimiento (utilizada en el proceso de verificación facial).
-13. **Verificación Facial**: Captura y validación en tiempo real para evitar cuentas falsas (bots/catfishing).
-14. **Finalización**: Confirmación de tu cuenta y acceso directo al Panel Principal.
+- Mostrar errores de API en copy comprensible.
+- No confiar en datos del cliente para permisos o verificación.
+- Invalidar caché después de cambios de perfil, match o conversación.
+- Mantener estados de carga y reintento explícitos.
 
----
+## Chat
 
-## 2. Inicio de Sesión (Login)
+La pantalla recupera conversaciones y mensajes por HTTP y después escucha
+Socket.IO para typing, mensajes nuevos, lectura, entrega, reacciones, presencia
+y borrado. Las imágenes y audios utilizan los servicios de multimedia y pueden
+pasar por URLs firmadas; la transcripción es una acción manual.
 
-Acceder a Bluvi es muy sencillo:
-1. Dirígete a la página de **Login**.
-2. Ingresa tu correo electrónico registrado y contraseña.
-3. Si has configurado la sesión en un equipo de confianza, el sistema renovará automáticamente tu acceso mediante cookies seguras en segundo plano sin necesidad de reintroducir tus datos cada vez.
+## Desarrollo de una pantalla
 
----
-
-## 3. Guía de Uso General
-
-Una vez dentro de tu cuenta, la interfaz se divide en tres áreas principales que puedes navegar desde la barra superior o el menú lateral:
-
-### Ajustes de Accesibilidad ("Interfaces of Calm")
-Puedes ajustar tu experiencia visual en cualquier momento desde el menú de configuración:
-- **Reducción de Movimiento**: Desactiva zooms, rebotes y transiciones fluidas si te causan sobrecarga cognitiva o mareos.
-- **Modo Oscuro / Claro**: Cambia el contraste para adaptarlo a la luz ambiental de tu habitación.
-- **Contraste Aumentado / Opacidad**: Aumenta la opacidad de los fondos transparentes para mejorar la legibilidad de los textos.
-
-### Descubrimiento de Perfiles (Explore)
-El motor de descubrimiento te mostrará tarjetas de perfiles afines según tus intereses, neurotipo y estilos de comunicación:
-1. Revisa la tarjeta de perfil con calma (se han evitado contadores de tiempo o elementos parpadeantes para evitar la prisa).
-2. Haz clic en **Conectar** para enviar una solicitud de match, o en **Siguiente** para guardar el perfil en tu lista de perfiles vistos y avanzar.
-
-### Conversación en Tiempo Real (Chat)
-Cuando otro usuario acepta tu solicitud de conexión, se genera un **Match** y se abre una sala de conversación privada:
-- **Mensajería Instantánea**: Envía y recibe mensajes en tiempo real gracias a WebSockets.
-- **Presencia Activa**: Puedes ver si el contacto está en línea o escribiendo.
-- **Notas de Voz**: Haz clic en el icono del micrófono para grabar un audio si te expresas mejor hablando.
-- **Transcripción Inteligente**: Si recibes un audio y prefieres leerlo (debido a sobrecarga sensorial auditiva), presiona el botón **Transcribir** debajo del mensaje para convertir el audio a texto escrito al instante.
-
-### Borrado Seguro de Cuenta
-Si decides abandonar la plataforma, puedes hacerlo desde tus ajustes:
-1. Ve a la sección de privacidad y haz clic en **Eliminar mi cuenta**.
-2. Tras confirmar tu contraseña, el sistema borrará en una sola transacción segura todas tus conversaciones, matches, fotos subidas a Supabase y credenciales del servidor, asegurando tu derecho al olvido digital.
+1. Localiza el dominio en `pages`, `components`, `services` y `types`.
+2. Reutiliza layout, tema, toast y controles accesibles existentes.
+3. Define estados loading/empty/error/success.
+4. Conecta la mutación al servicio y actualiza/invalida TanStack Query.
+5. Añade pruebas en `src/tests` o junto al flujo de registro.
+6. Ejecuta `npm run lint`, `npm test` y `npm run build`.

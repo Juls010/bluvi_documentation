@@ -5,49 +5,40 @@ sidebar_position: 1
 
 # Introducción a Bluvi
 
-¡Bienvenido a la documentación oficial de **Bluvi**! 
+Bluvi es una plataforma social inclusiva para crear conexiones seguras,
+auténticas y accesibles. La documentación reúne el estado técnico de sus tres
+aplicaciones y de los servicios que las conectan.
 
-Este espacio centraliza toda la documentación técnica, arquitectónica y operativa tanto del **Frontend** como del **Backend** de la plataforma.
-
----
-
-## ¿Qué es Bluvi?
-
-Bluvi es una plataforma moderna diseñada para conectar personas. Cuenta con una arquitectura robusta que combina un backend en tiempo real, un motor de búsqueda/descubrimiento rápido y servicios avanzados de accesibilidad.
-
----
-
-## Arquitectura del Proyecto
-
-El sistema está dividido en tres componentes principales:
+## Arquitectura general
 
 ```mermaid
-graph TD
-    A[Frontend Client] <-->|HTTP / WebSockets| B[Express.js API Gateway]
-    B <-->|ORM / SQL| C[(PostgreSQL)]
-    B <-->|Caching / Session| D[(Redis Cache)]
-    B <-->|Storage| E[Supabase Bucket]
+flowchart LR
+  Web[Frontend web\nReact + Vite] -->|HTTP / Socket.IO| API[Backend\nExpress + TypeScript]
+  Mobile[Mobile\nExpo + React Native] -->|HTTP / Socket.IO| API
+  API --> DB[(PostgreSQL\nSupabase)]
+  API --> Cache[(Redis / Upstash)]
+  API --> Storage[(Supabase Storage\nS3/R2 según flujo)]
+  API --> External[Servicios externos\nAWS, Veriff, Resend, Whisper]
+  Web --> WebHosting[Cloudflare Workers]
+  Mobile --> EAS[EAS Build / Android]
 ```
 
-### 1. Documentación General
-Contiene guías de arquitectura general del sistema, flujos de negocio globales y el glosario de términos comunes.
+El sistema es un **multirepo**. El frontend web y la app móvil comparten el
+backend, pero tienen clientes HTTP, almacenamiento de credenciales, navegación
+y capacidades nativas diferentes.
 
-### 2. Backend (bluvi-backend)
-Construido con:
-- **Node.js & Express**: API RESTful y pipeline de Middlewares.
-- **TypeScript**: Tipado seguro.
-- **PostgreSQL**: Base de datos relacional transaccional.
-- **Redis**: Sistema de caché para optimización del motor de descubrimiento (Explore).
-- **Socket.io**: Capa interactiva en tiempo real (mensajería, estados).
-- **Supabase**: Almacenamiento multimedia.
+## Recorrido de la documentación
 
-### 3. Frontend (bluvi-frontend)
-Documentación sobre la interfaz de usuario, diseño de componentes, flujo de estado y consumo de APIs de la plataforma.
+- [Guías generales](/general/architecture): arquitectura, colaboración y despliegue.
+- [Backend](/back/intro): API REST, persistencia, seguridad, tiempo real y operación.
+- [Frontend web](/front/intro): rutas, componentes, estado, accesibilidad y Cloudflare.
+- [Mobile](/mobile/intro): Expo Router, capacidades nativas, EAS, i18n y E2E.
 
----
+## Principios compartidos
 
-## Cómo empezar
-
-Selecciona una sección en la barra superior para explorar la documentación detallada:
-- Ir a [Documentación del Backend](/back/intro)
-- Ir a [Documentación del Frontend](/front/intro)
+- La autenticación se basa en tokens de acceso y renovación; el almacenamiento
+  cambia según la plataforma: cookies seguras en web y `SecureStore` en móvil.
+- La privacidad, la moderación, la accesibilidad cognitiva y el control del
+  usuario son requisitos funcionales, no solo decisiones visuales.
+- El cliente nunca es autoridad para resultados sensibles de verificación,
+  permisos de multimedia o moderación; esas decisiones se validan en backend.
