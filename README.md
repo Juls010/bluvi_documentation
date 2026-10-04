@@ -27,10 +27,11 @@ Genera el contenido estático en `build`.
 
 ## Despliegue
 
-La configuración de `docusaurus.config.ts` permite desplegar el sitio en GitHub
-Pages:
+En local, el sitio se sirve desde `/`. Para GitHub Pages, utiliza la ruta del
+proyecto al desplegar:
 
-```bash
+```powershell
+$env:DOCUSAURUS_BASE_URL = '/bluvi_documentation/'
 npm run deploy
 ```
 

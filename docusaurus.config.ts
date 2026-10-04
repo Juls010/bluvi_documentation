@@ -4,6 +4,8 @@ import type * as Preset from '@docusaurus/preset-classic';
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
+const baseUrl = process.env.DOCUSAURUS_BASE_URL ?? '/';
+
 const config: Config = {
   title: 'Documentación de Bluvi',
   tagline: 'Documentación técnica y operativa de la plataforma Bluvi',
@@ -18,7 +20,7 @@ const config: Config = {
   },
 
   url: 'https://juls010.github.io',
-  baseUrl: '/bluvi_documentation/',
+  baseUrl,
 
   organizationName: 'Juls010',
   projectName: 'bluvi_documentation',
